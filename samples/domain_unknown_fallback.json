@@ -1,0 +1,7 @@
+{
+  "state": {
+    "requested_domain": "astrology",
+    "available_domains": ["sales", "marketing", "manufacturing", "gdpr", "ai_governance", "operations", "finance", "systems_it", "hr"],
+    "domain_configs": null
+  }
+}

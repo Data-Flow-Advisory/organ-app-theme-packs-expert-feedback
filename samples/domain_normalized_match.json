@@ -1,0 +1,9 @@
+{
+  "state": {
+    "requested_domain": "AI Governance",
+    "available_domains": ["sales", "marketing", "manufacturing", "gdpr", "ai_governance", "operations", "finance", "systems_it", "hr"],
+    "domain_configs": {
+      "ai_governance": {"display_name": "AI Governance", "core_question_count": 4}
+    }
+  }
+}
