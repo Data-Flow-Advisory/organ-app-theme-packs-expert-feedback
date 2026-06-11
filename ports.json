@@ -1,0 +1,28 @@
+{
+  "inputs": [
+    {"name": "available_domains", "type": "ExpertDomainCatalogue", "required": true}
+  ],
+  "outputs": [
+    {"name": "domain_resolution", "type": "DomainResolution"}
+  ],
+  "_checked": {
+    "corpus_checked": "2026-06-11",
+    "oss_checked": "2026-06-11",
+    "corpus": {
+      "verdict": "NOT_DUPLICATE",
+      "ref": null,
+      "rationale": "Sole theme-pack-resolution organ in the org (gh repo list: organ-app-theme-packs-expert-feedback is the only `theme`/`pack` organ; no second domain-resolution organ exists). Its capability -- resolve an expert's declared domain to a canonical expert_feedback theme-pack key via exact/normalized matching, else fail-safe to the generic prompt -- extracts the single-sited logic in discovery-engine app/theme_packs/expert_feedback.py::get_domain_config / get_system_prompt (only caller: app/services/claude_service.py:474). Nearest-name neighbours are DIFFERENT capabilities: organ-feedback-processor classifies completed feedback interviews into structured issues (type/severity/title/status); organ-ae-adapters-feedback-adapter is an Always-Fed source adapter. No consolidation needed."
+    },
+    "oss": {
+      "verdict": "NO_ADOPT",
+      "ref": null,
+      "rationale": "No permissive OSS package implements 'resolve an expert domain to a theme-pack config key with fail-safe generic fallback' -- it is platform-specific glue over this app's domain catalogue. The pure core is ~40 lines of stdlib string normalization (lower/trim/space+hyphen->underscore, collapse repeats) plus a dict lookup with a deterministic fallback path. The only sub-component with OSS analogues is slug/label normalization (python-slugify) or fuzzy matching (rapidfuzz); adopting either would add an external dependency for ~10 lines of EXACT/normalized (not fuzzy) matching, and would violate the organ contract's CI-enforced stdlib-only rule (.github/workflows/conformance.yml). Keep maintaining."
+    },
+    "also_considered": [
+      "organ-feedback-processor -- shares the 'feedback' word but processes completed feedback interviews into structured issues, a distinct classification capability. Not a duplicate.",
+      "organ-ae-adapters-feedback-adapter -- Always-Fed Fleet feedback source adapter (queue backfill), unrelated to theme-pack domain resolution. Not a duplicate.",
+      "app/theme_packs/expert_feedback.py (discovery-engine) -- the source module this organ extracts its pure get_domain_config/get_system_prompt resolution from. Intended organ<->service relationship, NOT a duplicate.",
+      "PR #1 (branch item-19244-ports-json) -- an earlier in-flight PR adds the same inputs/outputs manifest without the audit stamp. This PR carries the identical port shape plus the _checked block; the two should be consolidated to one ports.json (flag for Godmode)."
+    ]
+  }
+}
