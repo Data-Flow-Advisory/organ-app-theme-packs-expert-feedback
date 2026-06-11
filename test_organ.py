@@ -184,7 +184,10 @@ class TestContract:
         )
         assert set(result.keys()) == {"output", "rationale", "self_metric"}
         assert set(result["output"].keys()) == {
-            "resolved_domain", "display_name", "use_generic_fallback", "reason"
+            "resolved_domain", "display_name", "use_generic_fallback", "reason",
+            # Additive, vocabulary-typed view of the decision — the
+            # DomainResolution output port declared in ports.json.
+            "domain_resolution",
         }
         assert set(result["self_metric"].keys()) == {"confidence", "decision_path"}
         assert isinstance(result["rationale"], str) and result["rationale"]

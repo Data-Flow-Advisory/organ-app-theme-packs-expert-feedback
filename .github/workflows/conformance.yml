@@ -29,6 +29,11 @@ jobs:
           else
             echo "No samples/ directory found" >> "$GITHUB_STEP_SUMMARY"
           fi
+      - name: Ports conformance (connection standard)
+        run: |
+          set -euo pipefail
+          echo "## Ports conformance" >> "$GITHUB_STEP_SUMMARY"
+          python3 ports_validate.py | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Run tests
         run: |
           python -m pip install --quiet pytest
