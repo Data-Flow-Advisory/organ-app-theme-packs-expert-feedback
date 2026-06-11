@@ -41,7 +41,13 @@ Contract:
       "resolved_domain": str | null,     # canonical key, or null on fallback
       "display_name": str | null,        # from domain_configs when supplied
       "use_generic_fallback": bool,
-      "reason": str                      # see _REASONS below
+      "reason": str,                     # see _REASONS below
+      "domain_resolution": {             # additive, vocabulary-typed view of
+        "resolved_domain": str | null,   #   the four fields above; declared as
+        "display_name": str | null,      #   the DomainResolution output port in
+        "use_generic_fallback": bool,    #   ports.json (the connection standard,
+        "reason": str                    #   see CONNECTORS.md / types.json).
+      }
     },
     "rationale": "...",
     "self_metric": {
@@ -95,13 +101,18 @@ def _normalize(value: str) -> str:
 
 
 def _fallback(reason: str, rationale: str, decision_path: str, confidence: float) -> dict:
+    resolution = {
+        "resolved_domain": None,
+        "display_name": None,
+        "use_generic_fallback": True,
+        "reason": reason,
+    }
     return {
-        "output": {
-            "resolved_domain": None,
-            "display_name": None,
-            "use_generic_fallback": True,
-            "reason": reason,
-        },
+        # The flat fields are the organ's native output; ``domain_resolution``
+        # is the additive, vocabulary-typed view of the same decision declared
+        # by ports.json as the ``DomainResolution`` output port (see ports.json
+        # / types.json). It is a re-view of the four fields, not new data.
+        "output": {**resolution, "domain_resolution": dict(resolution)},
         "rationale": rationale,
         "self_metric": {
             "confidence": confidence,
@@ -190,13 +201,15 @@ def _resolved(canonical: str, domain_configs: dict, decision_path: str) -> dict:
         dn = cfg.get("display_name")
         if isinstance(dn, str) and dn.strip():
             display_name = dn
+    resolution = {
+        "resolved_domain": canonical,
+        "display_name": display_name,
+        "use_generic_fallback": False,
+        "reason": "domain_matched",
+    }
     return {
-        "output": {
-            "resolved_domain": canonical,
-            "display_name": display_name,
-            "use_generic_fallback": False,
-            "reason": "domain_matched",
-        },
+        # ``domain_resolution`` mirrors the flat fields — see _fallback().
+        "output": {**resolution, "domain_resolution": dict(resolution)},
         "rationale": (
             f"Resolved expert domain to '{canonical}'"
             + (f" ({display_name})" if display_name else "")
