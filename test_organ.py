@@ -13,10 +13,15 @@ Tests cover the domain-resolution decision logic:
 """
 
 import json
+import os
 
 import pytest
 
 from organ import decide, _normalize
+
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+SAMPLES_DIR = os.path.join(HERE, "samples")
 
 
 # A catalogue mirroring expert_feedback_config.json's keys.
@@ -219,3 +224,66 @@ class TestNormalizeHelper:
         assert _normalize("systems-it") == "systems_it"
         assert _normalize("  Sales  ") == "sales"
         assert _normalize("a - b") == "a_b"
+
+
+# Pin each committed sample to its EXPECTED verdict. The conformance Action
+# only shadow-prints sample output to the job summary (report-only, no
+# assertion), so without this a verdict-flipping regression to organ.py or a
+# sample would still pass CI. These assertions are the real guard rail: each
+# sample's filename maps to the decision it must continue to produce.
+SAMPLE_EXPECTATIONS = {
+    "domain_exact_match.json": {
+        "resolved_domain": "sales",
+        "use_generic_fallback": False,
+        "reason": "domain_matched",
+        "display_name": "Sales Discovery",
+        "decision_path": "exact_match",
+    },
+    "domain_normalized_match.json": {
+        "resolved_domain": "ai_governance",
+        "use_generic_fallback": False,
+        "reason": "domain_matched",
+        "display_name": "AI Governance",
+        "decision_path": "normalized_match",
+    },
+    "domain_unknown_fallback.json": {
+        "resolved_domain": None,
+        "use_generic_fallback": True,
+        "reason": "domain_not_found",
+        "display_name": None,
+        "decision_path": "no_match",
+    },
+}
+
+
+class TestSamplesConform:
+    """Every committed sample resolves to its pinned verdict."""
+
+    def test_all_samples_present(self):
+        on_disk = {f for f in os.listdir(SAMPLES_DIR) if f.endswith(".json")}
+        assert on_disk == set(SAMPLE_EXPECTATIONS), (
+            "samples/ and SAMPLE_EXPECTATIONS have drifted apart"
+        )
+
+    @pytest.mark.parametrize("filename", sorted(SAMPLE_EXPECTATIONS))
+    def test_sample_verdict_pinned(self, filename):
+        with open(os.path.join(SAMPLES_DIR, filename)) as fh:
+            payload = json.load(fh)
+        result = decide(payload["state"], payload.get("context"))
+        expected = SAMPLE_EXPECTATIONS[filename]
+        assert result["output"]["resolved_domain"] == expected["resolved_domain"]
+        assert result["output"]["use_generic_fallback"] == expected["use_generic_fallback"]
+        assert result["output"]["reason"] == expected["reason"]
+        assert result["output"]["display_name"] == expected["display_name"]
+        assert result["self_metric"]["decision_path"] == expected["decision_path"]
+
+    @pytest.mark.parametrize("filename", sorted(SAMPLE_EXPECTATIONS))
+    def test_sample_contract_shape(self, filename):
+        with open(os.path.join(SAMPLES_DIR, filename)) as fh:
+            payload = json.load(fh)
+        result = decide(payload["state"], payload.get("context"))
+        assert set(result.keys()) == {"output", "rationale", "self_metric"}
+        assert result["output"]["reason"] in {
+            "domain_matched", "domain_not_found",
+            "no_domain_supplied", "no_domains_available",
+        }
