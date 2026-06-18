@@ -1,0 +1,8 @@
+{
+  "inputs": [
+    {"name": "available_domains", "type": "ExpertDomainCatalogue", "required": true}
+  ],
+  "outputs": [
+    {"name": "domain_resolution", "type": "DomainResolution"}
+  ]
+}

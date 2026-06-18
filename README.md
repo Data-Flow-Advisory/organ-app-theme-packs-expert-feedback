@@ -57,7 +57,13 @@ organ makes that resolution **explicit, fail-safe, and testable**:
     "resolved_domain": "ai_governance",
     "display_name": "AI Governance",
     "use_generic_fallback": false,
-    "reason": "domain_matched"
+    "reason": "domain_matched",
+    "domain_resolution": {
+      "resolved_domain": "ai_governance",
+      "display_name": "AI Governance",
+      "use_generic_fallback": false,
+      "reason": "domain_matched"
+    }
   },
   "rationale": "Resolved expert domain to 'ai_governance' (AI Governance) via normalized_match; ...",
   "self_metric": {
@@ -78,6 +84,9 @@ organ makes that resolution **explicit, fail-safe, and testable**:
   - `"domain_not_found"` — a domain was requested but no entry matches
   - `"no_domain_supplied"` — `requested_domain` was null/blank
   - `"no_domains_available"` — the catalogue itself was empty
+- **output.domain_resolution** (object): An **additive, vocabulary-typed view**
+  of the four fields above — the `DomainResolution` output port (see *Connection
+  standard* below). It re-views the same decision; it is not new data.
 - **rationale** (str): Human-readable explanation, derivable from state alone.
 - **self_metric.confidence** (float): `1.0` when fully determined; `0.5` for an
   empty catalogue (caller likely failed to load the config); `0.0` on the
@@ -136,6 +145,39 @@ else:
   never raises into the interview loop.
 - **Deterministic**: same input always produces the same output.
 - **Stdlib-only**: no external dependencies — runs anywhere Python 3.6+ is.
+
+## Connection standard (ports)
+
+This organ declares a typed-port manifest per the orchestrator connection
+standard ([`CONNECTORS.md`](https://github.com/Data-Flow-Advisory/orchestrator/blob/feat/drift-gate/CONNECTORS.md)).
+`ports.json` maps each wiring address (a key the organ reads under `state` /
+writes under `output`) to a type in the shared vocabulary (`types.json`, a
+vendored snapshot so the self-hosted CI runner needs no cross-repo auth):
+
+```json
+{
+  "inputs":  [{"name": "available_domains", "type": "ExpertDomainCatalogue", "required": true}],
+  "outputs": [{"name": "domain_resolution", "type": "DomainResolution"}]
+}
+```
+
+Two of this organ's `state` keys are deliberately **not** declared as ports:
+`requested_domain` is a bare scalar selector and `domain_configs` is optional
+catalogue metadata — the vocabulary has no scalar type by design and config
+knobs are not wires (see CONNECTORS.md). Both `ExpertDomainCatalogue` and
+`DomainResolution` are **proposed** additions to the vocabulary (flagged
+`_proposed` in the vendored `types.json`) — this organ is a theme-pack helper
+outside the discovery→build spine, so no existing type fit. They are submitted
+for review in the PR that introduces this manifest, not minted as canonical.
+
+`ports_validate.py` (run in the conformance workflow and via `test_ports.py`)
+asserts: `ports.json` parses; every port `type` exists in `types.json`; and
+`decide()` actually reads each declared input name and writes each declared
+output name, sampled against `samples/`.
+
+```bash
+python ports_validate.py   # exit 0 = conformant
+```
 
 ## Samples
 
